@@ -8,11 +8,11 @@ LICENSE file in the root directory of this source tree.
 """
 The pathfinder algorithm.
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-from __future__ import with_statement
+# from __future__ import absolute_import
+# from __future__ import division
+# from __future__ import print_function
+# from __future__ import unicode_literals
+# from __future__ import with_statement
 import heapq
 import os
 import sys
@@ -21,7 +21,7 @@ import time
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-from numba import autojit
+from numba import jit
 import numpy as np
 
 
@@ -277,7 +277,7 @@ def render(
     return frame_counter
 
 
-@autojit(nopython=True)
+# @jit(nopython=True)
 def nb_trace_back(
     distance,
     n_new_locs,
@@ -319,6 +319,8 @@ def nb_trace_back(
         # the neighbor position to the grid. It is distance[neighbor]
         # plus the distance to the neighbor from the current position.
         for (neighbor, scale) in neighbors:
+            if neighbor[0] < 0 or neighbor[0] >= 20 or neighbor[1] < 0 or neighbor[1] >= 20:
+                continue
             if neighbor not in path:
                 distance_from_neighbor = scale * weights[current_location]
                 neighbor_distance = (distance[neighbor] +
@@ -353,7 +355,7 @@ def nb_trace_back(
     return n_new_locs
 
 
-@autojit(nopython=True)
+# @jit(nopython=True)
 def nb_loop(
     col_here,
     distance,
@@ -388,7 +390,12 @@ def nb_loop(
         ((row_here + 1, col_here + 1), 2.**.5),
     ]
 
+    # Check if neighbor is out of bounds
+
     for (neighbor, scale) in neighbors:
+        # Check if neighbor is in bounds
+        if neighbor[0] < 0 or neighbor[0] >= n_rows or neighbor[1] < 0 or neighbor[1] >= n_cols:
+            continue
         weight = scale * weights[neighbor]
         neighbor_distance = distance_here + weight
 
