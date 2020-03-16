@@ -19,13 +19,14 @@ import sys
 import time
 
 import matplotlib
-matplotlib.use('Agg')
+# matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from numba import jit
 import numpy as np
 
 
 def seek(
+    ID,
     origins,
     targets=None,
     weights=None,
@@ -123,7 +124,8 @@ def seek(
     not_visited = 9999999999.
 
     if film:
-        frame_rate = int(1e4)
+        # frame_rate = int(1e4)
+        frame_rate = int(100)
         frame_counter = 100000
         frame_dirname = 'frames'
         try:
@@ -238,10 +240,14 @@ def seek(
         sys.stdout.flush()
         print('')
     # Add the newfound paths to the visualization.
-    rendering = 1. / (1. + distance / 10.)
+    # rendering = 1. / (1. + distance / 10.)
+    rendering = np.zeros(targets.shape)
+    rendering[np.where(targets)] = .9
     rendering[np.where(origins)] = 1.
-    rendering[np.where(paths)] = .8
+    rendering[np.where(paths)] = .6
+    render_path(frame_dirname, rendering)
     results = {'paths': paths, 'distance': distance, 'rendering': rendering}
+    print('Pathfinder complete after {its} iterations'.format(its=iteration))
     return results
 
 
@@ -277,7 +283,30 @@ def render(
     return frame_counter
 
 
-# @jit(nopython=True)
+def render_path(frame_dirname, rendering):
+    """
+    Turn the progress of the algorithm into a pretty picture. (for path)
+    """
+    path = rendering.copy()
+    filename = 'pathfinder_paths.png'
+    cmap = 'Spectral'
+    dpi = 1200
+    plt.figure(33374)
+    plt.clf()
+    plt.imshow(
+        path,
+        origin='higher',
+        interpolation='nearest',
+        cmap=plt.get_cmap(cmap),
+        vmax=1.,
+        vmin=0.,
+    )
+    filename_full = os.path.join(frame_dirname, filename)
+    plt.savefig(filename_full, dpi=dpi)
+    return 0
+
+
+@jit(nopython=True)
 def nb_trace_back(
     distance,
     n_new_locs,
@@ -355,7 +384,7 @@ def nb_trace_back(
     return n_new_locs
 
 
-# @jit(nopython=True)
+@jit(nopython=True)
 def nb_loop(
     col_here,
     distance,
@@ -389,8 +418,6 @@ def nb_loop(
         ((row_here - 1, col_here + 1), 2.**.5),
         ((row_here + 1, col_here + 1), 2.**.5),
     ]
-
-    # Check if neighbor is out of bounds
 
     for (neighbor, scale) in neighbors:
         # Check if neighbor is in bounds
