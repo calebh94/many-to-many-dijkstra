@@ -124,8 +124,8 @@ def seek(
     not_visited = 9999999999.
 
     if film:
-        # frame_rate = int(1e4)
-        frame_rate = int(100)
+        frame_rate = int(1e4)
+        # frame_rate = int(100)
         frame_counter = 100000
         frame_dirname = 'frames'
         try:
@@ -235,6 +235,10 @@ def seek(
             loc = (int(new_locs[i_loc, 1]), int(new_locs[i_loc, 2]))
             heapq.heappush(halo, (new_locs[i_loc, 0], loc))
 
+        #NEW: Early Stopping
+        if n_targets_remaining == 0:
+            break
+
     if debug:
         print('\r                                                 ', end='')
         sys.stdout.flush()
@@ -326,6 +330,7 @@ def nb_trace_back(
     path = []
     distance_remaining = distance[target]
     current_location = target
+    # print('Finding path from current location: {}'.format(target))
     while distance_remaining > 0.:
         path.append(current_location)
         (row_here, col_here) = current_location
@@ -348,7 +353,7 @@ def nb_trace_back(
         # the neighbor position to the grid. It is distance[neighbor]
         # plus the distance to the neighbor from the current position.
         for (neighbor, scale) in neighbors:
-            if neighbor[0] < 0 or neighbor[0] >= 20 or neighbor[1] < 0 or neighbor[1] >= 20:
+            if neighbor[0] < 0 or neighbor[0] >= distance.shape[0] or neighbor[1] < 0 or neighbor[1] >= distance.shape[1]:
                 continue
             if neighbor not in path:
                 distance_from_neighbor = scale * weights[current_location]
@@ -367,6 +372,7 @@ def nb_trace_back(
         current_location = best_neighbor
 
     # Add this new path.
+    # print('Updating path for linking')
     for i_loc, loc in enumerate(path):
         paths[loc] = 1
         # If paths are to be linked, include the entire paths as origins and
@@ -428,6 +434,8 @@ def nb_loop(
 
         if distance[neighbor] == not_visited:
             if targets[neighbor]:
+                # if True:
+                    # print('Found target!  Tracing path!')
                 n_new_locs = nb_trace_back(
                     distance,
                     n_new_locs,
@@ -439,6 +447,7 @@ def nb_loop(
                     neighbor,
                     weights,
                 )
+                # print('Path tracing complete!')
                 targets[neighbor] = 0
                 n_targets_remaining -= 1
         if neighbor_distance < distance[neighbor]:
